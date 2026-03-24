@@ -25,33 +25,42 @@ function login() {
 
   fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
     .then(res => res.json())
-    .then(data => {
+    .then(async data => {
       if (data.error) {
         document.getElementById("loginStatus").innerText = "❌ Invalid API Key";
         return;
       }
 
       localStorage.setItem("tornApiKey", key);
-      loadUser(data);
+      const premium = await checkPremium(data.player_id);
+      loadUser(data, premium);
     })
     .catch(() => {
       document.getElementById("loginStatus").innerText = "Error connecting to API";
     });
 }
 
+// CHECK PREMIUM
+async function checkPremium(userId) {
+  try {
+    const res = await fetch("https://raw.githubusercontent.com/YOURUSERNAME/tornnet/main/premium-users.json");
+    const data = await res.json();
+    return data.users.some(u => u.id === userId);
+  } catch (err) {
+    console.error("Premium check failed:", err);
+    return false;
+  }
+}
+
 // LOAD USER DATA
-async function loadUser(data) {
-  // Hide login card
+async function loadUser(data, isPremium) {
   const loginCard = document.getElementById("loginCard");
   if (loginCard) loginCard.style.display = "none";
 
-  // Show dashboard
   const dashboard = document.getElementById("dashboard");
   if (dashboard) dashboard.style.display = "grid";
 
-  // Username
-  const usernameEl = document.getElementById("username");
-  if (usernameEl) usernameEl.innerText = data.name || "Unknown";
+  document.getElementById("username")?.innerText = data.name || "Unknown";
 
   // PLAYER CARD
   const playerCard = document.getElementById("playerCard");
@@ -103,19 +112,23 @@ async function loadUser(data) {
   if (networthCard)
     networthCard.innerHTML = `📈 Networth: $${(data.networth?.total || 0).toLocaleString()}`;
 
-  // Smart Advisor (placeholder)
+  // Smart Advisor (Premium Locked)
   const advisorCard = document.getElementById("advisorCard");
   if (advisorCard) {
-    if (data.energy && data.nerve) {
-      if (data.energy.current > 100) {
-        advisorCard.innerHTML = "⚡ You should train or do crimes now.";
-      } else if (data.cooldowns?.drug > 0) {
-        advisorCard.innerHTML = "💊 You're on cooldown, chill for now.";
-      } else {
-        advisorCard.innerHTML = "📊 Save energy for better gains.";
-      }
-    } else {
+    if (!isPremium) {
       advisorCard.innerHTML = "🔒 Premium Feature";
+    } else {
+      if (data.energy && data.nerve) {
+        if (data.energy.current > 100) {
+          advisorCard.innerHTML = "⚡ Train or do crimes now!";
+        } else if (data.cooldowns?.drug > 0) {
+          advisorCard.innerHTML = "💊 You're on drug cooldown, wait!";
+        } else {
+          advisorCard.innerHTML = "📊 Save energy for bigger gains.";
+        }
+      } else {
+        advisorCard.innerHTML = "📊 Premium Advisor Loading...";
+      }
     }
   }
 
@@ -126,15 +139,16 @@ async function loadUser(data) {
 }
 
 // AUTO LOGIN
-window.onload = function () {
+window.onload = async function () {
   const savedKey = localStorage.getItem("tornApiKey");
 
   if (savedKey) {
     fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${savedKey}`)
       .then(res => res.json())
-      .then(data => {
+      .then(async data => {
         if (!data.error) {
-          loadUser(data);
+          const premium = await checkPremium(data.player_id);
+          loadUser(data, premium);
         }
       });
   }

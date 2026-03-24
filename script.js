@@ -1,7 +1,7 @@
 // ===== TAB SWITCHING =====
 function showTab(tabId, event) {
-  let tabs = document.getElementsByClassName("tab");
-  let buttons = document.querySelectorAll(".sidebar button");
+  const tabs = document.getElementsByClassName("tab");
+  const buttons = document.querySelectorAll(".sidebar button");
 
   for (let tab of tabs) tab.style.display = "none";
   buttons.forEach(btn => btn.classList.remove("active"));
@@ -14,20 +14,35 @@ function showTab(tabId, event) {
 
 // ===== LOGIN =====
 function login() {
-  const key = document.getElementById("apiKey").value;
+  const key = document.getElementById("apiKey").value.trim();
+  const statusEl = document.getElementById("loginStatus");
 
   if (!key) {
-    document.getElementById("loginStatus").innerText = "Enter API key";
+    statusEl.innerText = "Enter API key";
     return;
   }
 
-  document.getElementById("loginStatus").innerText = "Loading...";
+  statusEl.innerText = "Loading...";
 
-  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
+  // Try full fetch first
+  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth,stats&key=${key}`)
     .then(res => res.json())
     .then(data => {
       if (data.error) {
-        document.getElementById("loginStatus").innerText = "❌ Invalid API Key";
+        // If stats not allowed, retry without stats
+        fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
+          .then(res2 => res2.json())
+          .then(data2 => {
+            if (data2.error) {
+              statusEl.innerText = "❌ Invalid API Key";
+              return;
+            }
+            localStorage.setItem("tornApiKey", key);
+            loadUser(data2);
+          })
+          .catch(() => {
+            statusEl.innerText = "Error connecting to API";
+          });
         return;
       }
 
@@ -35,7 +50,7 @@ function login() {
       loadUser(data);
     })
     .catch(() => {
-      document.getElementById("loginStatus").innerText = "Error connecting to API";
+      statusEl.innerText = "Error connecting to API";
     });
 }
 
@@ -122,7 +137,6 @@ async function checkPremium(userId) {
   try {
     const res = await fetch("https://raw.githubusercontent.com/YOURUSERNAME/tornnet/main/premium-users.json");
     const data = await res.json();
-
     return data.users.some(u => u.id === userId);
   } catch (err) {
     console.error("Premium check failed:", err);
@@ -135,16 +149,12 @@ window.onload = function () {
   const savedKey = localStorage.getItem("tornApiKey");
 
   if (savedKey) {
-    fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth,stats&key=${savedKey}`)
+    fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${savedKey}`)
       .then(res => res.json())
       .then(data => {
-        if (!data.error) {
-          loadUser(data);
-          checkPremium(data.player_id).then(isPremium => {
-            localStorage.setItem("tornPremium", isPremium);
-          });
-        }
-      });
+        if (!data.error) loadUser(data);
+      })
+      .catch(() => console.warn("Auto-login fetch failed"));
   }
 };
 
@@ -155,7 +165,7 @@ function logout() {
   location.reload();
 }
 
-// ===== EVENT LISTENERS FOR TABS =====
+// ===== TAB BUTTONS =====
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("tab-dashboard")?.addEventListener("click", (e) => showTab("dashboard", e));
   document.getElementById("tab-tools")?.addEventListener("click", (e) => showTab("tools", e));

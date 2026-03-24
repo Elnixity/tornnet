@@ -1,1 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TornNet Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
 
+<body>
+
+<div class="container">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>💀 TornNet</h2>
+
+    <button onclick="showTab('dashboard')">Dashboard</button>
+    <button onclick="showTab('tools')">Tools</button>
+    <button onclick="showTab('premium')">💊 Premium</button>
+    <button onclick="showTab('profile')">Profile</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <span id="username">Not Logged In</span>
+    </div>
+
+    <!-- LOGIN CARD -->
+    <div id="loginCard" class="card">
+      <h2>🔑 Login with Torn API</h2>
+      <input type="password" id="apiKey" placeholder="Enter API Key">
+      <button onclick="login()">Login</button>
+      <p id="loginStatus"></p>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="tab" style="display:none;">
+      <div class="card" id="playerCard">Loading...</div>
+      <div class="card" id="moneyCard"></div>
+      <div class="card" id="levelCard"></div>
+    </div>
+
+    <div id="tools" class="tab" style="display:none;">
+      <div class="card">💰 Split Calculator (coming)</div>
+    </div>
+
+    <div id="premium" class="tab" style="display:none;">
+      <div class="card locked">💊 Premium Feature Locked</div>
+    </div>
+
+    <div id="profile" class="tab" style="display:none;">
+      <div class="card">
+        <p id="profileInfo"></p>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
-// TAB SWITCHING
+
+// ===== TAB SWITCHING =====
 function showTab(tabId, event) {
   let tabs = document.getElementsByClassName("tab");
   let buttons = document.querySelectorAll(".sidebar button");
@@ -12,7 +13,7 @@ function showTab(tabId, event) {
   if (event?.target) event.target.classList.add("active");
 }
 
-// LOGIN
+// ===== LOGIN =====
 function login() {
   const key = document.getElementById("apiKey")?.value;
 
@@ -23,7 +24,7 @@ function login() {
 
   document.getElementById("loginStatus").innerText = "Loading...";
 
-  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
+  fetch(`https://api.torn.com/user/?selections=basic,money,bars,stats,cooldowns,networth&key=${key}`)
     .then(res => res.json())
     .then(async data => {
       if (data.error) {
@@ -32,6 +33,7 @@ function login() {
       }
 
       localStorage.setItem("tornApiKey", key);
+
       const premium = await checkPremium(data.player_id);
       loadUser(data, premium);
     })
@@ -40,110 +42,94 @@ function login() {
     });
 }
 
-// CHECK PREMIUM
+// ===== PREMIUM CHECK =====
 async function checkPremium(userId) {
   try {
     const res = await fetch("https://raw.githubusercontent.com/YOURUSERNAME/tornnet/main/premium-users.json");
     const data = await res.json();
     return data.users.some(u => u.id === userId);
-  } catch (err) {
-    console.error("Premium check failed:", err);
+  } catch {
     return false;
   }
 }
 
-// LOAD USER DATA
-async function loadUser(data, isPremium) {
+// ===== ADVISOR =====
+function getAdvisorText(data, isPremium) {
+  if (!isPremium) return "🔒 Premium Feature";
+
+  if (data.energy?.current > 100) {
+    return "⚡ Train or do crimes now!";
+  } else if (data.cooldowns?.drug > 0) {
+    return "💊 You're on cooldown, wait.";
+  } else {
+    return "📊 Save energy for better gains.";
+  }
+}
+
+// ===== LOAD USER =====
+function loadUser(data, isPremium) {
+
+  // Hide login
   const loginCard = document.getElementById("loginCard");
   if (loginCard) loginCard.style.display = "none";
 
+  // Show dashboard
   const dashboard = document.getElementById("dashboard");
   if (dashboard) dashboard.style.display = "grid";
 
-  document.getElementById("username")?.innerText = data.name || "Unknown";
+  // Username
+  document.getElementById("username").innerText = data.name || "Unknown";
 
-  // PLAYER CARD
-  const playerCard = document.getElementById("playerCard");
-  if (playerCard)
-    playerCard.innerHTML = `👤 <b>${data.name || "Unknown"}</b><br>Level ${data.level || "?"}`;
-
-  // MONEY
-  const moneyCard = document.getElementById("moneyCard");
-  if (moneyCard)
-    moneyCard.innerHTML = `💰 $${(data.money || 0).toLocaleString()}`;
-
-  // ENERGY
-  const energyCard = document.getElementById("energyCard");
-  if (energyCard) {
-    if (data.energy) {
-      const percent = (data.energy.current / data.energy.maximum) * 100;
-      energyCard.innerHTML = `
-        ⚡ Energy: ${data.energy.current}/${data.energy.maximum}
-        <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
-          <div style="width:${percent}%; background:#22c55e; height:8px; border-radius:6px;"></div>
-        </div>`;
-    } else {
-      energyCard.innerHTML = "⚡ Energy: Not available";
-    }
+  // ===== STATUS CARD =====
+  const statusCard = document.getElementById("statusCard");
+  if (statusCard) {
+    statusCard.innerHTML = `
+      ⚡ Energy: ${data.energy?.current || 0}/${data.energy?.maximum || 0}<br>
+      🧠 Nerve: ${data.nerve?.current || 0}/${data.nerve?.maximum || 0}<br>
+      😊 Happy: ${data.happy?.current || 0}/${data.happy?.maximum || 0}
+    `;
   }
 
-  // NERVE
-  const nerveCard = document.getElementById("nerveCard");
-  if (nerveCard) {
-    if (data.nerve) {
-      const percent = (data.nerve.current / data.nerve.maximum) * 100;
-      nerveCard.innerHTML = `
-        🧠 Nerve: ${data.nerve.current}/${data.nerve.maximum}
-        <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
-          <div style="width:${percent}%; background:#9333ea; height:8px; border-radius:6px;"></div>
-        </div>`;
-    } else {
-      nerveCard.innerHTML = "🧠 Nerve: Not available";
-    }
+  // ===== STATS CARD =====
+  const statsCard = document.getElementById("statsCard");
+  if (statsCard) {
+    statsCard.innerHTML = `
+      📊 Level: ${data.level || 0}<br>
+      💪 Strength: ${data.strength || 0}<br>
+      ⚡ Speed: ${data.speed || 0}<br>
+      🛡️ Defense: ${data.defense || 0}<br>
+      🎯 Dexterity: ${data.dexterity || 0}
+    `;
   }
 
-  // COOLDOWNS
-  const cooldownCard = document.getElementById("cooldownCard");
-  if (cooldownCard)
-    cooldownCard.innerHTML = `💊 Drug Cooldown: ${data.cooldowns?.drug || 0}s`;
-
-  // NETWORTH
-  const networthCard = document.getElementById("networthCard");
-  if (networthCard)
-    networthCard.innerHTML = `📈 Networth: $${(data.networth?.total || 0).toLocaleString()}`;
-
-  // Smart Advisor (Premium Locked)
-  const advisorCard = document.getElementById("advisorCard");
-  if (advisorCard) {
-    if (!isPremium) {
-      advisorCard.innerHTML = "🔒 Premium Feature";
-    } else {
-      if (data.energy && data.nerve) {
-        if (data.energy.current > 100) {
-          advisorCard.innerHTML = "⚡ Train or do crimes now!";
-        } else if (data.cooldowns?.drug > 0) {
-          advisorCard.innerHTML = "💊 You're on drug cooldown, wait!";
-        } else {
-          advisorCard.innerHTML = "📊 Save energy for bigger gains.";
-        }
-      } else {
-        advisorCard.innerHTML = "📊 Premium Advisor Loading...";
-      }
-    }
+  // ===== OVERVIEW CARD =====
+  const overviewCard = document.getElementById("overviewCard");
+  if (overviewCard) {
+    overviewCard.innerHTML = `
+      💰 Money: $${(data.money || 0).toLocaleString()}<br>
+      📈 Networth: $${(data.networth?.total || 0).toLocaleString()}<br>
+      💊 Drug Cooldown: ${data.cooldowns?.drug || 0}s<br><br>
+      🧠 ${getAdvisorText(data, isPremium)}
+    `;
   }
 
-  // Profile Info
+  // ===== PROFILE =====
   const profileInfo = document.getElementById("profileInfo");
-  if (profileInfo)
-    profileInfo.innerHTML = `Name: ${data.name || "Unknown"}<br>Level: ${data.level || "?"}`;
+  if (profileInfo) {
+    profileInfo.innerHTML = `
+      Name: ${data.name || "Unknown"}<br>
+      Level: ${data.level || 0}<br>
+      Premium: ${isPremium ? "Yes 💊" : "No"}
+    `;
+  }
 }
 
-// AUTO LOGIN
+// ===== AUTO LOGIN =====
 window.onload = async function () {
   const savedKey = localStorage.getItem("tornApiKey");
 
   if (savedKey) {
-    fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${savedKey}`)
+    fetch(`https://api.torn.com/user/?selections=basic,money,bars,stats,cooldowns,networth&key=${savedKey}`)
       .then(res => res.json())
       .then(async data => {
         if (!data.error) {
@@ -154,8 +140,21 @@ window.onload = async function () {
   }
 };
 
-// LOGOUT
+// ===== LOGOUT =====
 function logout() {
   localStorage.removeItem("tornApiKey");
   location.reload();
 }
+
+// ===== EVENT LISTENERS =====
+document.addEventListener("DOMContentLoaded", () => {
+
+  document.getElementById("loginBtn")?.addEventListener("click", login);
+  document.getElementById("logoutBtn")?.addEventListener("click", logout);
+
+  document.getElementById("tab-dashboard")?.addEventListener("click", (e) => showTab("dashboard", e));
+  document.getElementById("tab-tools")?.addEventListener("click", (e) => showTab("tools", e));
+  document.getElementById("tab-premium")?.addEventListener("click", (e) => showTab("premium", e));
+  document.getElementById("tab-profile")?.addEventListener("click", (e) => showTab("profile", e));
+
+});

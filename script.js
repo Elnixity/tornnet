@@ -23,7 +23,7 @@ function login() {
 
   document.getElementById("loginStatus").innerText = "Loading...";
 
-  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
+  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth,stats&key=${key}`)
     .then(res => res.json())
     .then(data => {
       if (data.error) {
@@ -41,78 +41,76 @@ function login() {
 
 // ===== LOAD USER DATA =====
 function loadUser(data) {
-  // hide login, show dashboard
   document.getElementById("loginCard").style.display = "none";
   document.getElementById("dashboard").style.display = "grid";
 
-  // TOP BAR
   document.getElementById("username").innerText = data.name;
 
-  // PLAYER CARD
-  document.getElementById("playerCard").innerHTML =
-    `👤 <b>${data.name}</b><br>Level ${data.level}`;
+  // ===== STATUS CARD =====
+  const statusCard = document.getElementById("statusCard");
+  if (statusCard) {
+    const energyPercent = data.energy ? (data.energy.current / data.energy.maximum) * 100 : 0;
+    const nervePercent = data.nerve ? (data.nerve.current / data.nerve.maximum) * 100 : 0;
+    const happyPercent = data.happy ? (data.happy.current / data.happy.maximum) * 100 : 0;
 
-  // MONEY CARD
-  if (document.getElementById("moneyCard")) {
-    document.getElementById("moneyCard").innerHTML =
-      `💰 $${(data.money || 0).toLocaleString()}`;
+    statusCard.innerHTML = `
+      ⚡ Energy: ${data.energy?.current || 0}/${data.energy?.maximum || 0}
+      <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
+        <div style="width:${energyPercent}%; background:#22c55e; height:8px; border-radius:6px;"></div>
+      </div>
+      🧠 Nerve: ${data.nerve?.current || 0}/${data.nerve?.maximum || 0}
+      <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
+        <div style="width:${nervePercent}%; background:#9333ea; height:8px; border-radius:6px;"></div>
+      </div>
+      😊 Happiness: ${data.happy?.current || 0}/${data.happy?.maximum || 0}
+      <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
+        <div style="width:${happyPercent}%; background:#facc15; height:8px; border-radius:6px;"></div>
+      </div>
+    `;
   }
 
-  // ENERGY
-  if (data.energy) {
-    let percent = (data.energy.current / data.energy.maximum) * 100;
-    document.getElementById("energyCard").innerHTML =
-      `⚡ Energy: ${data.energy.current}/${data.energy.maximum}
-       <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
-         <div style="width:${percent}%; background:#22c55e; height:8px; border-radius:6px;"></div>
-       </div>`;
-  } else {
-    document.getElementById("energyCard").innerHTML = "⚡ Energy: Not available";
+  // ===== STATS CARD =====
+  const statsCard = document.getElementById("statsCard");
+  if (statsCard) {
+    statsCard.innerHTML = `
+      📊 Level: ${data.level || 0}<br>
+      💪 Strength: ${data.strength || 0}<br>
+      ⚡ Speed: ${data.speed || 0}<br>
+      🛡️ Defense: ${data.defense || 0}<br>
+      🎯 Dexterity: ${data.dexterity || 0}
+    `;
   }
 
-  // NERVE
-  if (data.nerve) {
-    let percent = (data.nerve.current / data.nerve.maximum) * 100;
-    document.getElementById("nerveCard").innerHTML =
-      `🧠 Nerve: ${data.nerve.current}/${data.nerve.maximum}
-       <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
-         <div style="width:${percent}%; background:#9333ea; height:8px; border-radius:6px;"></div>
-       </div>`;
-  } else {
-    document.getElementById("nerveCard").innerHTML = "🧠 Nerve: Not available";
+  // ===== OVERVIEW CARD =====
+  const overviewCard = document.getElementById("overviewCard");
+  if (overviewCard) {
+    overviewCard.innerHTML = `
+      💰 Money: $${(data.money || 0).toLocaleString()}<br>
+      📈 Networth: $${(data.networth?.total || 0).toLocaleString()}<br>
+      💊 Drug Cooldown: ${data.cooldowns?.drug || 0}s
+    `;
   }
 
-  // COOLDOWNS
-  if (data.cooldowns) {
-    document.getElementById("cooldownCard").innerHTML =
-      `💊 Drug Cooldown: ${data.cooldowns.drug || 0}s`;
+  // ===== PROFILE INFO =====
+  const profileInfo = document.getElementById("profileInfo");
+  if (profileInfo) {
+    profileInfo.innerHTML = `
+      Name: ${data.name}<br>
+      Level: ${data.level}
+    `;
   }
-
-  // NETWORTH
-  if (data.networth) {
-    document.getElementById("networthCard").innerHTML =
-      `📈 Networth: $${(data.networth.total || 0).toLocaleString()}`;
-  }
-
-  // PROFILE
-  document.getElementById("profileInfo").innerHTML =
-    `Name: ${data.name}<br>Level: ${data.level}`;
 
   // ===== PREMIUM CHECK =====
   checkPremium(data.player_id).then(isPremium => {
-
     localStorage.setItem("tornPremium", isPremium);
 
     const premiumTab = document.querySelector("#premium .card");
-
     if (premiumTab) {
       premiumTab.innerHTML = isPremium
         ? "💊 Premium Features Unlocked 😈"
         : "🔒 Premium Feature Locked";
     }
 
-    // add premium info to profile
-    const profileInfo = document.getElementById("profileInfo");
     if (profileInfo) {
       profileInfo.innerHTML += `<br>Premium: ${isPremium ? "Yes 💊" : "No"}`;
     }
@@ -137,7 +135,7 @@ window.onload = function () {
   const savedKey = localStorage.getItem("tornApiKey");
 
   if (savedKey) {
-    fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${savedKey}`)
+    fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth,stats&key=${savedKey}`)
       .then(res => res.json())
       .then(data => {
         if (!data.error) {
@@ -159,11 +157,6 @@ function logout() {
 
 // ===== EVENT LISTENERS FOR TABS =====
 document.addEventListener("DOMContentLoaded", () => {
-  // login/logout buttons
-  document.getElementById("loginBtn")?.addEventListener("click", login);
-  document.getElementById("logoutBtn")?.addEventListener("click", logout);
-
-  // tab buttons
   document.getElementById("tab-dashboard")?.addEventListener("click", (e) => showTab("dashboard", e));
   document.getElementById("tab-tools")?.addEventListener("click", (e) => showTab("tools", e));
   document.getElementById("tab-premium")?.addEventListener("click", (e) => showTab("premium", e));

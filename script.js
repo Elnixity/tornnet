@@ -21,7 +21,7 @@ function login() {
 
   document.getElementById("loginStatus").innerText = "Loading...";
 
-  fetch(`https://api.torn.com/user/?selections=basic,money,bars&key=${key}`)
+  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
     .then(res => res.json())
     .then(data => {
       if (data.error) {
@@ -42,20 +42,54 @@ function loadUser(data) {
   document.getElementById("loginCard").style.display = "none";
   document.getElementById("dashboard").style.display = "grid";
 
+  // TOP BAR
   document.getElementById("username").innerText = data.name;
 
+  // PLAYER CARD
   document.getElementById("playerCard").innerHTML =
     `👤 <b>${data.name}</b><br>Level ${data.level}`;
 
+  // MONEY
   document.getElementById("moneyCard").innerHTML =
-    `💰 $${data.money.toLocaleString()}`;
+    `💰 $${(data.money || 0).toLocaleString()}`;
 
-  document.getElementById("energyCard").innerHTML =
-    `⚡ Energy: ${data.energy.current}/${data.energy.maximum}`;
+  // ENERGY (SAFE)
+  if (data.energy) {
+    let percent = (data.energy.current / data.energy.maximum) * 100;
+    document.getElementById("energyCard").innerHTML =
+      `⚡ Energy: ${data.energy.current}/${data.energy.maximum}
+       <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
+         <div style="width:${percent}%; background:#22c55e; height:8px; border-radius:6px;"></div>
+       </div>`;
+  } else {
+    document.getElementById("energyCard").innerHTML = "⚡ Energy: Not available";
+  }
 
-  document.getElementById("nerveCard").innerHTML =
-    `🧠 Nerve: ${data.nerve.current}/${data.nerve.maximum}`;
+  // NERVE (SAFE)
+  if (data.nerve) {
+    let percent = (data.nerve.current / data.nerve.maximum) * 100;
+    document.getElementById("nerveCard").innerHTML =
+      `🧠 Nerve: ${data.nerve.current}/${data.nerve.maximum}
+       <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
+         <div style="width:${percent}%; background:#9333ea; height:8px; border-radius:6px;"></div>
+       </div>`;
+  } else {
+    document.getElementById("nerveCard").innerHTML = "🧠 Nerve: Not available";
+  }
 
+  // COOLDOWNS
+  if (data.cooldowns) {
+    document.getElementById("cooldownCard").innerHTML =
+      `💊 Drug Cooldown: ${data.cooldowns.drug || 0}s`;
+  }
+
+  // NETWORTH
+  if (data.networth) {
+    document.getElementById("networthCard").innerHTML =
+      `📈 Networth: $${(data.networth.total || 0).toLocaleString()}`;
+  }
+
+  // PROFILE
   document.getElementById("profileInfo").innerHTML =
     `Name: ${data.name}<br>Level: ${data.level}`;
 }
@@ -65,7 +99,7 @@ window.onload = function () {
   const savedKey = localStorage.getItem("tornApiKey");
 
   if (savedKey) {
-    fetch(`https://api.torn.com/user/?selections=basic,money,bars&key=${savedKey}`)
+    fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${savedKey}`)
       .then(res => res.json())
       .then(data => {
         if (!data.error) {

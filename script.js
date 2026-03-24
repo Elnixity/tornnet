@@ -23,7 +23,7 @@ function login() {
 
   document.getElementById("loginStatus").innerText = "Loading...";
 
-  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth,stats&key=${key}`)
+  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
     .then(res => res.json())
     .then(data => {
       if (data.error) {

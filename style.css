@@ -120,3 +120,20 @@ button:hover {
   opacity: 0.5;
   border: 1px solid purple;
 }
+
+.bar {
+  background: #1e293b;
+  border-radius: 6px;
+  margin: 5px 0;
+}
+
+.bar div {
+  height: 8px;
+  background: #22c55e;
+  border-radius: 6px;
+}
+
+.premium .card {
+  border: 1px solid #9333ea;
+  box-shadow: 0 0 10px #9333ea55;
+}

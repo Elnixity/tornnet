@@ -24,25 +24,11 @@ function login() {
 
   statusEl.innerText = "Loading...";
 
-  // Try full fetch first
-  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth,stats&key=${key}`)
+  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
     .then(res => res.json())
     .then(data => {
       if (data.error) {
-        // If stats not allowed, retry without stats
-        fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
-          .then(res2 => res2.json())
-          .then(data2 => {
-            if (data2.error) {
-              statusEl.innerText = "❌ Invalid API Key";
-              return;
-            }
-            localStorage.setItem("tornApiKey", key);
-            loadUser(data2);
-          })
-          .catch(() => {
-            statusEl.innerText = "Error connecting to API";
-          });
+        statusEl.innerText = "❌ Invalid API Key";
         return;
       }
 
@@ -54,121 +40,143 @@ function login() {
     });
 }
 
-// ===== LOAD USER DATA =====
+// ===== BASIC ADVICE =====
+function getBasicAdvice(data) {
+  if (data.energy?.current > 50) return "⚡ Use your energy!";
+  if (data.nerve?.current > 10) return "🧠 Do some crimes!";
+  return "😴 Wait and recover.";
+}
+
+// ===== PREMIUM ADVICE =====
+function getPremiumAdvice(data) {
+  if (data.energy?.current > 100) return "🔥 Train HARD right now";
+  if (data.cooldowns?.drug > 0) return "💊 Wait for drug cooldown";
+  if (data.nerve?.current > 20) return "🧠 Do high-tier crimes";
+  return "📈 Stack resources for efficiency";
+}
+
+// ===== PROFIT ESTIMATOR =====
+function estimateCrimeProfit(data) {
+  return (data.nerve?.current || 0) * 5000;
+}
+
+// ===== LOAD USER =====
 function loadUser(data) {
   document.getElementById("loginCard").style.display = "none";
   document.getElementById("dashboard").style.display = "grid";
-
   document.getElementById("username").innerText = data.name;
 
-  // ===== STATUS CARD =====
+  // STATUS CARD
   const statusCard = document.getElementById("statusCard");
   if (statusCard) {
-    const energyPercent = data.energy ? (data.energy.current / data.energy.maximum) * 100 : 0;
-    const nervePercent = data.nerve ? (data.nerve.current / data.nerve.maximum) * 100 : 0;
-    const happyPercent = data.happy ? (data.happy.current / data.happy.maximum) * 100 : 0;
+    const e = data.energy || {};
+    const n = data.nerve || {};
+    const h = data.happy || {};
+
+    const eP = (e.current / e.maximum) * 100 || 0;
+    const nP = (n.current / n.maximum) * 100 || 0;
+    const hP = (h.current / h.maximum) * 100 || 0;
 
     statusCard.innerHTML = `
-      ⚡ Energy: ${data.energy?.current || 0}/${data.energy?.maximum || 0}
-      <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
-        <div style="width:${energyPercent}%; background:#22c55e; height:8px; border-radius:6px;"></div>
-      </div>
-      🧠 Nerve: ${data.nerve?.current || 0}/${data.nerve?.maximum || 0}
-      <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
-        <div style="width:${nervePercent}%; background:#9333ea; height:8px; border-radius:6px;"></div>
-      </div>
-      😊 Happiness: ${data.happy?.current || 0}/${data.happy?.maximum || 0}
-      <div style="background:#1e293b; border-radius:6px; margin-top:5px;">
-        <div style="width:${happyPercent}%; background:#facc15; height:8px; border-radius:6px;"></div>
-      </div>
+      ⚡ Energy: ${e.current || 0}/${e.maximum || 0}
+      <div class="bar"><div style="width:${eP}%"></div></div>
+      🧠 Nerve: ${n.current || 0}/${n.maximum || 0}
+      <div class="bar"><div style="width:${nP}%; background:#9333ea"></div></div>
+      😊 Happiness: ${h.current || 0}/${h.maximum || 0}
+      <div class="bar"><div style="width:${hP}%; background:#facc15"></div></div>
     `;
   }
 
-  // ===== STATS CARD =====
-  const statsCard = document.getElementById("statsCard");
-  if (statsCard) {
-    statsCard.innerHTML = `
-      📊 Level: ${data.level || 0}<br>
-      💪 Strength: ${data.strength || 0}<br>
-      ⚡ Speed: ${data.speed || 0}<br>
-      🛡️ Defense: ${data.defense || 0}<br>
-      🎯 Dexterity: ${data.dexterity || 0}
-    `;
-  }
+  // STATS CARD
+  document.getElementById("statsCard").innerHTML = `
+    📊 Level: ${data.level || 0}<br>
+    💪 Strength: ${data.strength || 0}<br>
+    ⚡ Speed: ${data.speed || 0}<br>
+    🛡️ Defense: ${data.defense || 0}<br>
+    🎯 Dexterity: ${data.dexterity || 0}
+  `;
 
-  // ===== OVERVIEW CARD =====
-  const overviewCard = document.getElementById("overviewCard");
-  if (overviewCard) {
-    overviewCard.innerHTML = `
+  // OVERVIEW (WITH PREMIUM)
+  checkPremium(data.player_id).then(isPremium => {
+
+    localStorage.setItem("tornPremium", isPremium);
+
+    let advice = isPremium
+      ? getPremiumAdvice(data)
+      : getBasicAdvice(data);
+
+    let extra = "";
+
+    if (isPremium) {
+      let profit = estimateCrimeProfit(data);
+      let readyTime = new Date(Date.now() + (data.cooldowns?.drug || 0) * 1000);
+
+      extra = `
+        <br>💰 Est. Crime Profit: $${profit.toLocaleString()}
+        <br>⏱ Drug Ready: ${readyTime.toLocaleTimeString()}
+      `;
+
+      document.body.classList.add("premium");
+    }
+
+    document.getElementById("overviewCard").innerHTML = `
       💰 Money: $${(data.money || 0).toLocaleString()}<br>
       📈 Networth: $${(data.networth?.total || 0).toLocaleString()}<br>
       💊 Drug Cooldown: ${data.cooldowns?.drug || 0}s
+      ${extra}
+      <br><br>🧠 ${advice}
     `;
-  }
 
-  // ===== PROFILE INFO =====
-  const profileInfo = document.getElementById("profileInfo");
-  if (profileInfo) {
-    profileInfo.innerHTML = `
-      Name: ${data.name}<br>
-      Level: ${data.level}
-    `;
-  }
-
-  // ===== PREMIUM CHECK =====
-  checkPremium(data.player_id).then(isPremium => {
-    localStorage.setItem("tornPremium", isPremium);
-
+    // PREMIUM TAB
     const premiumTab = document.querySelector("#premium .card");
-    if (premiumTab) {
-      premiumTab.innerHTML = isPremium
-        ? "💊 Premium Features Unlocked 😈"
-        : "🔒 Premium Feature Locked";
-    }
+    premiumTab.innerHTML = isPremium
+      ? "💊 Premium Unlocked 😈"
+      : "🔒 Premium Locked";
 
-    if (profileInfo) {
-      profileInfo.innerHTML += `<br>Premium: ${isPremium ? "Yes 💊" : "No"}`;
-    }
+    // PROFILE
+    document.getElementById("profileInfo").innerHTML = `
+      Name: ${data.name}<br>
+      Level: ${data.level}<br>
+      Premium: ${isPremium ? "Yes 💊" : "No"}
+    `;
   });
 }
 
-// ===== PREMIUM SYSTEM =====
+// ===== PREMIUM CHECK =====
 async function checkPremium(userId) {
   try {
     const res = await fetch("https://raw.githubusercontent.com/elnixity/tornnet/main/premium-users.json");
     const data = await res.json();
     return data.users.some(u => u.id === userId);
-  } catch (err) {
-    console.error("Premium check failed:", err);
+  } catch {
     return false;
   }
 }
 
+// ===== SPLIT CALCULATOR =====
+function calculateSplit() {
+  const total = parseInt(document.getElementById("splitTotal").value) || 0;
+  const people = parseInt(document.getElementById("splitPeople").value) || 1;
+
+  const each = Math.floor(total / people);
+  document.getElementById("splitResult").innerText =
+    `Each person gets $${each.toLocaleString()}`;
+}
+
 // ===== AUTO LOGIN =====
 window.onload = function () {
-  const savedKey = localStorage.getItem("tornApiKey");
+  const key = localStorage.getItem("tornApiKey");
+  if (!key) return;
 
-  if (savedKey) {
-    fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${savedKey}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) loadUser(data);
-      })
-      .catch(() => console.warn("Auto-login fetch failed"));
-  }
+  fetch(`https://api.torn.com/user/?selections=basic,money,bars,cooldowns,networth&key=${key}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.error) loadUser(data);
+    });
 };
 
 // ===== LOGOUT =====
 function logout() {
-  localStorage.removeItem("tornApiKey");
-  localStorage.removeItem("tornPremium");
+  localStorage.clear();
   location.reload();
 }
-
-// ===== TAB BUTTONS =====
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("tab-dashboard")?.addEventListener("click", (e) => showTab("dashboard", e));
-  document.getElementById("tab-tools")?.addEventListener("click", (e) => showTab("tools", e));
-  document.getElementById("tab-premium")?.addEventListener("click", (e) => showTab("premium", e));
-  document.getElementById("tab-profile")?.addEventListener("click", (e) => showTab("profile", e));
-});

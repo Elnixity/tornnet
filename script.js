@@ -9,7 +9,9 @@ function showTab(tabId, event) {
   const activeTab = document.getElementById(tabId);
   if (activeTab) activeTab.style.display = "grid";
 
-  if (event?.target) event.target.classList.add("active");
+  if (event && event.target) {
+    event.target.classList.add("active");
+  }
 }
 
 // ===== LOGIN =====
@@ -66,28 +68,25 @@ function loadUser(data) {
   document.getElementById("dashboard").style.display = "grid";
   document.getElementById("username").innerText = data.name;
 
-  // STATUS CARD
-  const statusCard = document.getElementById("statusCard");
-  if (statusCard) {
-    const e = data.energy || {};
-    const n = data.nerve || {};
-    const h = data.happy || {};
+  // ===== STATUS CARD =====
+  const e = data.energy || {};
+  const n = data.nerve || {};
+  const h = data.happy || {};
 
-    const eP = (e.current / e.maximum) * 100 || 0;
-    const nP = (n.current / n.maximum) * 100 || 0;
-    const hP = (h.current / h.maximum) * 100 || 0;
+  const eP = (e.current / e.maximum) * 100 || 0;
+  const nP = (n.current / n.maximum) * 100 || 0;
+  const hP = (h.current / h.maximum) * 100 || 0;
 
-    statusCard.innerHTML = `
-      ⚡ Energy: ${e.current || 0}/${e.maximum || 0}
-      <div class="bar"><div style="width:${eP}%"></div></div>
-      🧠 Nerve: ${n.current || 0}/${n.maximum || 0}
-      <div class="bar"><div style="width:${nP}%; background:#9333ea"></div></div>
-      😊 Happiness: ${h.current || 0}/${h.maximum || 0}
-      <div class="bar"><div style="width:${hP}%; background:#facc15"></div></div>
-    `;
-  }
+  document.getElementById("statusCard").innerHTML = `
+    ⚡ Energy: ${e.current || 0}/${e.maximum || 0}
+    <div class="bar"><div style="width:${eP}%"></div></div>
+    🧠 Nerve: ${n.current || 0}/${n.maximum || 0}
+    <div class="bar"><div style="width:${nP}%; background:#9333ea"></div></div>
+    😊 Happiness: ${h.current || 0}/${h.maximum || 0}
+    <div class="bar"><div style="width:${hP}%; background:#facc15"></div></div>
+  `;
 
-  // STATS CARD
+  // ===== STATS CARD =====
   document.getElementById("statsCard").innerHTML = `
     📊 Level: ${data.level || 0}<br>
     💪 Strength: ${data.strength || 0}<br>
@@ -96,7 +95,7 @@ function loadUser(data) {
     🎯 Dexterity: ${data.dexterity || 0}
   `;
 
-  // OVERVIEW (WITH PREMIUM)
+  // ===== PREMIUM CHECK =====
   checkPremium(data.player_id).then(isPremium => {
 
     localStorage.setItem("tornPremium", isPremium);
@@ -119,6 +118,7 @@ function loadUser(data) {
       document.body.classList.add("premium");
     }
 
+    // ===== OVERVIEW CARD =====
     document.getElementById("overviewCard").innerHTML = `
       💰 Money: $${(data.money || 0).toLocaleString()}<br>
       📈 Networth: $${(data.networth?.total || 0).toLocaleString()}<br>
@@ -127,19 +127,20 @@ function loadUser(data) {
       <br><br>🧠 ${advice}
     `;
 
-    // PREMIUM TAB
-    const premiumTab = document.querySelector("#premium .card");
-    premiumTab.innerHTML = isPremium
-      ? "💊 Premium Unlocked 😈"
-      : "🔒 Premium Locked";
+    // ===== PREMIUM TAB =====
+    document.querySelector("#premium .card").innerHTML =
+      isPremium ? "💊 Premium Unlocked 😈" : "🔒 Premium Locked";
 
-    // PROFILE
+    // ===== PROFILE =====
     document.getElementById("profileInfo").innerHTML = `
       Name: ${data.name}<br>
       Level: ${data.level}<br>
       Premium: ${isPremium ? "Yes 💊" : "No"}
     `;
   });
+
+  // 👉 AUTO SWITCH TO DASHBOARD
+  showTab("dashboard");
 }
 
 // ===== PREMIUM CHECK =====

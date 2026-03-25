@@ -135,7 +135,7 @@ function loadUser(data) {
 // ===== PREMIUM SYSTEM =====
 async function checkPremium(userId) {
   try {
-    const res = await fetch("https://raw.githubusercontent.com/YOURUSERNAME/tornnet/main/premium-users.json");
+    const res = await fetch("https://raw.githubusercontent.com/elnixity/tornnet/main/premium-users.json");
     const data = await res.json();
     return data.users.some(u => u.id === userId);
   } catch (err) {

@@ -6,15 +6,17 @@
 </head>
 
 <body>
+
 <div class="container">
 
   <!-- SIDEBAR -->
   <div class="sidebar">
     <h2>💀 TornNet</h2>
-    <button id="tab-dashboard">Dashboard</button>
-    <button id="tab-tools">Tools</button>
-    <button id="tab-premium">💊 Premium</button>
-    <button id="tab-profile">Profile</button>
+
+    <button onclick="showTab('dashboard', event)">Dashboard</button>
+    <button onclick="showTab('tools', event)">Tools</button>
+    <button onclick="showTab('premium', event)">💊 Premium</button>
+    <button onclick="showTab('profile', event)">Profile</button>
   </div>
 
   <!-- MAIN -->
@@ -25,7 +27,7 @@
       <span id="username">Not Logged In</span>
     </div>
 
-    <!-- LOGIN CARD -->
+    <!-- LOGIN -->
     <div id="loginCard" class="card">
       <h2>🔑 Login with Torn API</h2>
       <input type="password" id="apiKey" placeholder="Enter API Key">
@@ -36,29 +38,28 @@
     <!-- DASHBOARD -->
     <div id="dashboard" class="tab" style="display:none; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
 
-      <!-- STATUS CARD -->
       <div class="card" id="statusCard">Loading...</div>
-
-      <!-- STATS CARD -->
       <div class="card" id="statsCard">Loading...</div>
-
-      <!-- OVERVIEW CARD -->
       <div class="card" id="overviewCard">Loading...</div>
 
     </div>
 
     <!-- TOOLS -->
-    <div class="card">
-  <h3>💰 Split Calculator</h3>
-  <input id="splitTotal" placeholder="Total Money">
-  <input id="splitPeople" placeholder="People">
-  <button onclick="calculateSplit()">Calculate</button>
-  <p id="splitResult"></p>
+    <div id="tools" class="tab" style="display:none;">
+      <div class="card">
+        <h3>💰 Split Calculator</h3>
+        <input id="splitTotal" placeholder="Total Money">
+        <input id="splitPeople" placeholder="Number of People">
+        <button onclick="calculateSplit()">Calculate</button>
+        <p id="splitResult"></p>
+      </div>
     </div>
 
     <!-- PREMIUM -->
     <div id="premium" class="tab" style="display:none;">
-      <div class="card locked">💊 Premium Feature Locked</div>
+      <div class="card">
+        🔒 Premium Loading...
+      </div>
     </div>
 
     <!-- PROFILE -->
